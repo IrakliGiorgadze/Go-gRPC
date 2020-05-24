@@ -135,7 +135,7 @@ func doErrorUnary(c calculatorpb.CalcServiceClient) {
 	doErrorCall(c, -1)
 }
 
-func doErrorCall(c calculatorpb.CalcServiceClient, n int32)  {
+func doErrorCall(c calculatorpb.CalcServiceClient, n int32) {
 	res, err := c.SquareRoot(context.Background(), &calculatorpb.SquareRootRequest{
 		Number: n,
 	})
