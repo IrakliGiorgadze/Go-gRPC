@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net"
 	"os"
@@ -10,14 +12,42 @@ import (
 	"gRPC/blog/blogpb"
 
 	"google.golang.org/grpc"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+var collection *mongo.Collection
 
 type server struct{}
 
+type blogItem struct {
+	ID      primitive.ObjectID `bson:"_id,omitempty"`
+	Author  string             `bson:"author_id"`
+	Content string             `bson:"content"`
+	Title   string             `bson:"title"`
+}
+
+var (
+	client *mongo.Client
+	mongoURL = "mongodb://localhost:27017"
+)
+
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	fmt.Println("connecting to MongoDB...")
+
+	client, err := mongo.NewClient(options.Client().ApplyURI(mongoURL))
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = client.Connect(context.TODO())
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	fmt.Println("blog server started...")
+	collection = client.Database("mydb").Collection("blog")
 
 	lis, err := net.Listen("tcp", "0.0.0.0:50051")
 	if err != nil {
@@ -44,5 +74,7 @@ func main() {
 	s.Stop()
 	fmt.Println("closing the listener")
 	lis.Close()
+	fmt.Println("closing MongoDB connection")
+	client.Disconnect(context.TODO())
 	fmt.Println("end of the program")
 }
