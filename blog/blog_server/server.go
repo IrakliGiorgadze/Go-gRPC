@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
 	"net"
 	"os"
@@ -12,9 +11,12 @@ import (
 	"gRPC/blog/blogpb"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var collection *mongo.Collection
@@ -22,16 +24,43 @@ var collection *mongo.Collection
 type server struct{}
 
 type blogItem struct {
-	ID      primitive.ObjectID `bson:"_id,omitempty"`
-	Author  string             `bson:"author_id"`
-	Content string             `bson:"content"`
-	Title   string             `bson:"title"`
+	ID       primitive.ObjectID `bson:"_id,omitempty"`
+	AuthorID string             `bson:"author_id"`
+	Content  string             `bson:"content"`
+	Title    string             `bson:"title"`
 }
 
 var (
-	client *mongo.Client
+	client   *mongo.Client
 	mongoURL = "mongodb://localhost:27017"
 )
+
+func (*server) CreateBlog(ctx context.Context, req *blogpb.CreateBlogRequest) (*blogpb.CreateBlogResponse, error) {
+
+	blog := req.GetBlog()
+	data := blogItem{
+		AuthorID: blog.GetAuthorId(),
+		Content:  blog.GetTitle(),
+		Title:    blog.GetTitle(),
+	}
+
+	res, err := collection.InsertOne(context.Background(), data)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("internal server error: %v", err))
+	}
+	oid, ok := res.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return nil, status.Errorf(codes.Internal, fmt.Sprintf("can't convert to OID %v", err))
+	}
+	return &blogpb.CreateBlogResponse{
+		Blog: &blogpb.Blog{
+			Id:       oid.Hex(),
+			AuthorId: blog.GetAuthorId(),
+			Title:    blog.GetTitle(),
+			Content:  blog.GetContent(),
+		},
+	}, nil
+}
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
