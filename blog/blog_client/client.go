@@ -58,7 +58,7 @@ func main() {
 		Title:    "Qubit (edited)",
 		Content:  "In quantum computing... (edited)",
 	}
-	
+
 	_, err = c.UpdateBlog(context.Background(), &blogpb.UpdateBlogRequest{
 		Blog: newBlog,
 	})
