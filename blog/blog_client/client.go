@@ -51,4 +51,18 @@ func main() {
 		fmt.Printf("error while reading: %v", err)
 	}
 	fmt.Println(readBlogRes)
+
+	newBlog := &blogpb.Blog{
+		Id:       blogID,
+		AuthorId: "Shady Claus",
+		Title:    "Qubit (edited)",
+		Content:  "In quantum computing... (edited)",
+	}
+	
+	_, err = c.UpdateBlog(context.Background(), &blogpb.UpdateBlogRequest{
+		Blog: newBlog,
+	})
+	if err != nil {
+		fmt.Printf("error while updating: %v", err)
+	}
 }
