@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"gRPC/blog/blogpb"
@@ -22,6 +23,9 @@ func main() {
 	defer cc.Close()
 
 	c := blogpb.NewBlogServiceClient(cc)
+
+	// Create Blog
+
 	blog := &blogpb.Blog{
 		AuthorId: "Shady",
 		Title:    "Qubit",
@@ -35,6 +39,8 @@ func main() {
 	}
 	fmt.Println(createBlogRes)
 	blogID := createBlogRes.GetBlog().GetId()
+
+	// Read Blog
 
 	_, err = c.ReadBlog(context.Background(), &blogpb.ReadBlogRequest{
 		BlogId: "5ecbb195229e4f84e926237c",
@@ -52,6 +58,8 @@ func main() {
 	}
 	fmt.Println(readBlogRes)
 
+	// Update Blog
+
 	newBlog := &blogpb.Blog{
 		Id:       blogID,
 		AuthorId: "Shady Claus",
@@ -66,9 +74,28 @@ func main() {
 		fmt.Printf("error while updating: %v", err)
 	}
 
+	// Delete Blog
+
 	deleteRes, deleteErr := c.DeleteBlog(context.Background(), &blogpb.DeleteBlogRequest{BlogId: blogID})
 	if deleteErr != nil {
 		fmt.Printf("Error happened while deleting: %v \n", deleteErr)
 	}
 	fmt.Printf("Blog was deleted: %v \n", deleteRes)
+
+	// List Blog
+
+	stream, err := c.ListBlog(context.Background(), &blogpb.ListBlogRequest{})
+	if err != nil {
+		log.Fatalf("error while calling ListBlog RPC: %v", err)
+	}
+	for {
+		res, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Something happened: %v", err)
+		}
+		fmt.Println(res.GetBlog())
+	}
 }
